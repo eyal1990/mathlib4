@@ -272,6 +272,35 @@ theorem mem_of_mem_of_mem_sym {n : ℕ} {xs : List α} {a : α} {z : Sym α n}
       right
       exact mem_of_mem_of_mem_sym ha hz
 
+/-- An unordered tuple belongs to `xs.sym n` if and only if all its elements belong to `xs`. -/
+theorem mem_sym_iff {n : ℕ} {xs : List α} {z : Sym α n} :
+    z ∈ xs.sym n ↔ ∀ a ∈ z, a ∈ xs := by
+  refine ⟨fun hz a ha ↦ mem_of_mem_of_mem_sym ha hz, ?_⟩
+  induction n generalizing xs with
+  | zero =>
+      intro _
+      rw [Sym.eq_nil_of_card_zero z]
+      simp [List.sym]
+  | succ n ih =>
+      induction xs generalizing z with
+      | nil =>
+          intro hz
+          obtain ⟨a, _, ha⟩ := Sym.exists_eq_cons_of_succ z
+          simpa [ha] using hz a (by simp [ha])
+      | cons x xs ihxs =>
+          intro hz
+          by_cases hx : x ∈ z
+          · obtain ⟨t, rfl⟩ := Sym.exists_cons_of_mem hx
+            rw [List.sym, mem_append, mem_map]
+            exact Or.inl ⟨t, ih fun a ha ↦ hz a (Sym.mem_cons_of_mem ha), rfl⟩
+          · rw [List.sym, mem_append]
+            right
+            apply ihxs
+            intro a ha
+            rcases mem_cons.mp (hz a ha) with h | h
+            · exact (hx (h ▸ ha)).elim
+            · exact h
+
 theorem first_mem_of_cons_mem_sym {xs : List α} {n : ℕ} {a : α} {z : Sym α n}
     (h : a ::ₛ z ∈ xs.sym (n + 1)) : a ∈ xs :=
   mem_of_mem_of_mem_sym (Sym.mem_cons_self a z) h
